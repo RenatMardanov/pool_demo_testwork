@@ -2,10 +2,9 @@ import { Board } from "./components/Board";
 
 function App() {
     return (
-        <>
+        <div>
             <Board />
-            <p className="read-the-docs">init</p>
-        </>
+        </div>
     );
 }
 

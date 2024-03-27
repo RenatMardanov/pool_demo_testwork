@@ -3,7 +3,6 @@ export interface IBall {
     y: number;
     radius: number;
     color: string;
-    isDropped: boolean;
-    velocityX: number; // добавляем скорость по X
+    velocityX: number;
     velocityY: number;
 }

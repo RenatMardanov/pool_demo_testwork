@@ -4,109 +4,61 @@ import { handleBallCollision, handleBorderCollision } from "../core/physics";
 
 export const Board: React.FC = () => {
     const boardRef = useRef<HTMLCanvasElement>(null);
+    const [config, setConfig] = useState({
+        damping: 0.995,
+        hitSpeed: 5,
+        restitution: 0.8,
+    });
     const [balls, setBalls] = useState<IBall[]>([
         {
             x: 555,
             y: 200,
             radius: 20,
             color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
         {
-            x: 585,
+            x: 555,
             y: 200,
             radius: 20,
             color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
         {
-            x: 615,
+            x: 555,
             y: 200,
             radius: 20,
             color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
         {
-            x: 645,
+            x: 555,
             y: 200,
             radius: 20,
             color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
         {
-            x: 675,
-            y: 200,
+            x: 555,
+            y: 250,
             radius: 20,
             color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
         {
-            x: 510,
-            y: 180,
+            x: 555,
+            y: 350,
             radius: 20,
             color: "white",
-            isDropped: false,
-            velocityX: 0,
-            velocityY: 0,
-        },
-        {
-            x: 540,
-            y: 180,
-            radius: 20,
-            color: "white",
-            isDropped: false,
-            velocityX: 0,
-            velocityY: 0,
-        },
-        {
-            x: 570,
-            y: 180,
-            radius: 20,
-            color: "white",
-            isDropped: false,
-            velocityX: 0,
-            velocityY: 0,
-        },
-        {
-            x: 600,
-            y: 180,
-            radius: 20,
-            color: "white",
-            isDropped: false,
-            velocityX: 0,
-            velocityY: 0,
-        },
-        {
-            x: 630,
-            y: 180,
-            radius: 20,
-            color: "white",
-            isDropped: false,
-            velocityX: 0,
-            velocityY: 0,
-        },
-        {
-            x: 660,
-            y: 180,
-            radius: 20,
-            color: "white",
-            isDropped: false,
             velocityX: 0,
             velocityY: 0,
         },
     ]);
-
-    const [damping, setDamping] = useState<number>(0.995); // Коэффициент затухания
 
     useEffect(() => {
         if (!boardRef.current) return;
@@ -115,7 +67,6 @@ export const Board: React.FC = () => {
 
         const boardWidth = ctx.canvas.width;
         const boardHeight = ctx.canvas.height;
-        const restitution = 0.8; // Коэффициент упругости
 
         const drawBalls = () => {
             ctx.clearRect(0, 0, boardWidth, boardHeight);
@@ -136,28 +87,47 @@ export const Board: React.FC = () => {
         const updateBallPosition = (ball: IBall, mouseX: number, mouseY: number) => {
             const angle = Math.atan2(mouseY - ball.y, mouseX - ball.x);
 
-            const hitSpeed = 5;
-            ball.velocityX = Math.cos(angle) * hitSpeed;
-            ball.velocityY = Math.sin(angle) * hitSpeed;
+            ball.velocityX = -Math.cos(angle) * config.hitSpeed;
+            ball.velocityY = -Math.sin(angle) * config.hitSpeed;
 
             ball.x += ball.velocityX;
             ball.y += ball.velocityY;
 
-            handleBorderCollision(ball, boardWidth, boardHeight, restitution);
+            handleBorderCollision(ball, boardWidth, boardHeight, config.restitution);
 
             balls.forEach((otherBall) => {
                 if (ball !== otherBall) {
-                    handleBallCollision(ball, otherBall, restitution);
+                    handleBallCollision(ball, otherBall, config.restitution);
                 }
             });
 
             if (Math.abs(ball.velocityX) < 0.5) ball.velocityX = 0;
             if (Math.abs(ball.velocityY) < 0.5) ball.velocityY = 0;
+            boardRef.current?.removeEventListener("mousemove", handleMouseMove);
+        };
+        const animate = () => {
+            drawBalls();
+            balls.forEach((ball) => {
+                ball.velocityX *= config.damping;
+                ball.velocityY *= config.damping;
+                ball.x += ball.velocityX;
+                ball.y += ball.velocityY;
+
+                handleBorderCollision(ball, boardWidth, boardHeight, config.restitution);
+
+                balls.forEach((otherBall) => {
+                    if (ball !== otherBall) {
+                        handleBallCollision(ball, otherBall, config.restitution);
+                    }
+                });
+            });
+            requestAnimationFrame(animate);
         };
 
         const handleMouseMove = (e: MouseEvent) => {
             const rect = boardRef.current?.getBoundingClientRect();
             if (!rect) return;
+
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
 
@@ -173,37 +143,29 @@ export const Board: React.FC = () => {
             });
         };
 
-        const animate = () => {
-            drawBalls();
-            balls.forEach((ball) => {
-                ball.velocityX *= damping;
-                ball.velocityY *= damping;
-                ball.x += ball.velocityX;
-                ball.y += ball.velocityY;
-
-                handleBorderCollision(ball, boardWidth, boardHeight, restitution);
-
-                balls.forEach((otherBall) => {
-                    if (ball !== otherBall) {
-                        handleBallCollision(ball, otherBall, restitution);
-                    }
-                });
-            });
-            requestAnimationFrame(animate);
+        const handleMouseDown = () => {
+            boardRef.current?.addEventListener("mousemove", handleMouseMove);
         };
 
-        boardRef.current?.addEventListener("mousemove", handleMouseMove);
+        const handleMouseUp = () => {
+            boardRef.current?.removeEventListener("mousemove", handleMouseMove);
+        };
+
+        boardRef.current?.addEventListener("mousedown", handleMouseDown);
+        boardRef.current?.addEventListener("mouseup", handleMouseUp);
 
         animate();
+        setBalls;
+        setConfig;
 
         return () => {
             ctx.clearRect(0, 0, boardWidth, boardHeight);
         };
-    }, [balls, damping]);
-    console.log("render");
+    }, [balls, config]);
+
     return (
-        <div>
-            <canvas width={1200} height={600} ref={boardRef} className="relative"></canvas>
+        <div className="flex justify-center items-center min-h-dvh">
+            <canvas width={1200} height={600} ref={boardRef}></canvas>
         </div>
     );
 };
